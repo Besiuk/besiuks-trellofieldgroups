@@ -268,7 +268,9 @@ function bind() {
 
 /* ── resize iframe ── */
 function resize() {
-  setTimeout(function(){ t.sizeTo('#app').catch(function(){}); }, 30);
+  t.sizeTo('#app').catch(function(){});
+  setTimeout(function(){ t.sizeTo('#app').catch(function(){}); }, 100);
+  setTimeout(function(){ t.sizeTo('#app').catch(function(){}); }, 500);
 }
 
 /* ── init ── */
