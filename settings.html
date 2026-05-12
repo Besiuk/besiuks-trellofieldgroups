@@ -383,6 +383,8 @@ function renderFieldRow(gid, f) {
     +opt('checkboxes','Checkboxes',f.type)
     +opt('dropdown','Dropdown (Buttons)',f.type)
     +opt('select','Select (Classic)',f.type)
+    +opt('heading','— Heading —',f.type)
+    +opt('divider','— Divider —',f.type)
     +'</select>';
 
   // Width
@@ -412,6 +414,14 @@ function renderFieldRow(gid, f) {
       +'data-action="field-checklabel" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" '
       +'value="'+h(f.checkLabel||'')+'">'; 
     html += '</div>';
+  }
+
+  // Hint for heading / divider
+  if (f.type === 'heading') {
+    html += '<div style="font-size:11px;color:#7a8ea0;padding-top:3px">↑ Text displayed as centered section heading</div>';
+  }
+  if (f.type === 'divider') {
+    html += '<div style="font-size:11px;color:#7a8ea0;padding-top:3px">↑ Name is optional — renders as a horizontal line</div>';
   }
 
   // Options for dropdown / checkboxes / select

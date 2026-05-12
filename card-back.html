@@ -139,6 +139,24 @@
   }
   .f-select:focus { outline: none; border-color: #4c9ce0; }
 
+  /* ── Heading & Divider ── */
+  .f-heading {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #7a8ea0;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 4px 0 2px;
+    width: 100%;
+  }
+  .f-divider {
+    border: none;
+    border-top: 1px solid #2f3f4f;
+    width: 100%;
+    margin: 6px 0 2px;
+  }
+
   /* ── Empty / no match ── */
   .no-fields { color: #3d5166; font-size: 12px; padding: 6px 0; }
 
@@ -226,6 +244,12 @@ function fieldHtml(f) {
       inner += '<option value="'+h(opt)+'"'+sel+'>'+h(opt)+'</option>';
     });
     inner += '</select>';
+
+  } else if (f.type === 'heading') {
+    return '<div class="field-wrap '+wc+'"><div class="f-heading">'+h(f.label)+'</div></div>';
+
+  } else if (f.type === 'divider') {
+    return '<div class="field-wrap '+wc+'"><hr class="f-divider"></div>';
   }
 
   return '<div class="field-wrap '+wc+'"><div class="field-label">'+h(f.label)+'</div>'+inner+'</div>';
