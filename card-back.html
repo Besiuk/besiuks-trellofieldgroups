@@ -293,20 +293,9 @@ function bind() {
       var id   = this.dataset.id;
       var val  = this.dataset.val;
       var isOn = this.classList.contains('on');
-      // reset all buttons in group — class AND inline style
-      app.querySelectorAll('.f-btn[data-id="'+id+'"]').forEach(function(b) {
-        b.classList.remove('on');
-        b.style.background  = '';
-        b.style.borderColor = '';
-      });
       if (isOn) { save(id, null); }
-      else {
-        var color = this.dataset.color || '#4c9ce0';
-        this.classList.add('on');
-        this.style.background  = color;
-        this.style.borderColor = color;
-        save(id, val);
-      }
+      else      { save(id, val); }
+      render(activeTab); // re-render immediately with correct colors
     });
   });
 }
