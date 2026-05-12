@@ -22,10 +22,11 @@ TrelloPowerUp.initialize({
     return [{
       text: 'Field Groups',
       callback: function(t) {
-        return t.popup({
+        return t.modal({
           title: 'Field Groups',
           url: t.signUrl('./settings.html'),
-          height: 600
+          height: 600,
+          width: 700
         });
       }
     }];

@@ -45,6 +45,7 @@
   .fw-half    { width: calc(50% - 6px); }
   .fw-third   { width: calc(33.333% - 8px); }
   .fw-quarter { width: calc(25% - 9px); }
+  .fw-fifth   { width: calc(20% - 10px); }
 
   /* ── Single field wrapper ── */
   .field-wrap { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
@@ -58,6 +59,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
   }
 
   /* ── Text / Number ── */
@@ -112,6 +114,20 @@
   .f-btn:hover { background: #2f3f4f; color: #b6c2cf; }
   .f-btn.on { background: #4c9ce0; border-color: #4c9ce0; color: #fff; }
 
+  /* ── Classic select dropdown ── */
+  .f-select {
+    width: 100%;
+    background: #22303c;
+    border: 1px solid #2f3f4f;
+    border-radius: 4px;
+    color: #b6c2cf;
+    padding: 6px 9px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .f-select:focus { outline: none; border-color: #4c9ce0; }
+
   /* ── Empty / no match ── */
   .no-fields { color: #3d5166; font-size: 12px; padding: 6px 0; }
 
@@ -134,7 +150,7 @@ function h(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function widthClass(w) {
-  return { 'full':'fw-full', '1/2':'fw-half', '1/3':'fw-third', '1/4':'fw-quarter' }[w] || 'fw-full';
+  return { 'full':'fw-full', '1/2':'fw-half', '1/3':'fw-third', '1/4':'fw-quarter', '1/5':'fw-fifth' }[w] || 'fw-full';
 }
 function uid() {
   return Math.random().toString(36).slice(2,9);
@@ -183,6 +199,15 @@ function fieldHtml(f) {
       inner += '<button class="f-btn'+on+'" data-id="'+h(f.id)+'" data-val="'+h(opt)+'">'+h(opt)+'</button>';
     });
     inner += '</div>';
+
+  } else if (f.type === 'select') {
+    inner = '<select class="f-select" data-id="'+h(f.id)+'">';
+    inner += '<option value="">— wählen —</option>';
+    (f.options || []).forEach(function(opt) {
+      var sel = val === opt ? ' selected' : '';
+      inner += '<option value="'+h(opt)+'"'+sel+'>'+h(opt)+'</option>';
+    });
+    inner += '</select>';
   }
 
   return '<div class="field-wrap '+wc+'"><div class="field-label">'+h(f.label)+'</div>'+inner+'</div>';
@@ -249,6 +274,13 @@ function bind() {
       if (this.checked) { if (cur.indexOf(opt) === -1) cur.push(opt); }
       else { cur = cur.filter(function(v){ return v !== opt; }); }
       save(id, cur);
+    });
+  });
+
+  // Classic select
+  app.querySelectorAll('.f-select').forEach(function(el) {
+    el.addEventListener('change', function() {
+      save(this.dataset.id, this.value || null);
     });
   });
 
