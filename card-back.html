@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: transparent;
+    color: #b6c2cf;
+    font-size: 13px;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #2f3f4f;
+    margin-bottom: 14px;
+  }
+  .tab {
+    padding: 8px 14px;
+    cursor: pointer;
+    color: #7a8ea0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+    user-select: none;
+  }
+  .tab:hover { color: #b6c2cf; }
+  .tab.active { color: #4c9ce0; border-bottom-color: #4c9ce0; }
+
+  /* ── Fields grid ── */
+  .fields-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+  }
+
+  /* Width variants */
+  .fw-full    { width: 100%; }
+  .fw-half    { width: calc(50% - 6px); }
+  .fw-third   { width: calc(33.333% - 8px); }
+  .fw-quarter { width: calc(25% - 9px); }
+
+  /* ── Single field wrapper ── */
+  .field-wrap { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+  .field-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #7a8ea0;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Text / Number ── */
+  .f-input {
+    width: 100%;
+    background: #22303c;
+    border: 1px solid #2f3f4f;
+    border-radius: 4px;
+    color: #b6c2cf;
+    padding: 6px 9px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .f-input:focus { outline: none; border-color: #4c9ce0; }
+  .f-input::placeholder { color: #3d5166; }
+
+  /* ── Checkbox single ── */
+  .f-check-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 0;
+    cursor: pointer;
+  }
+  .f-check-row input[type="checkbox"] {
+    width: 15px; height: 15px;
+    cursor: pointer;
+    accent-color: #4c9ce0;
+    flex-shrink: 0;
+  }
+  .f-check-row span { font-size: 13px; color: #b6c2cf; }
+
+  /* ── Checkboxes (multiple) ── */
+  .f-checks { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ── Dropdown (button group) ── */
+  .f-btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+  .f-btn {
+    padding: 5px 11px;
+    background: #22303c;
+    border: 1px solid #2f3f4f;
+    border-radius: 4px;
+    color: #7a8ea0;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .f-btn:hover { background: #2f3f4f; color: #b6c2cf; }
+  .f-btn.on { background: #4c9ce0; border-color: #4c9ce0; color: #fff; }
+
+  /* ── Empty / no match ── */
+  .no-fields { color: #3d5166; font-size: 12px; padding: 6px 0; }
+
+  #app { padding: 2px 2px 10px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script>
+var t = TrelloPowerUp.iframe();
+var activeTab = 0;
+var matchedGroups = [];
+var values = {};
+
+/* ── helpers ── */
+function h(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function widthClass(w) {
+  return { 'full':'fw-full', '1/2':'fw-half', '1/3':'fw-third', '1/4':'fw-quarter' }[w] || 'fw-full';
+}
+function uid() {
+  return Math.random().toString(36).slice(2,9);
+}
+
+/* ── save ── */
+function save(fieldId, val) {
+  values[fieldId] = val;
+  t.set('card', 'shared', 'fieldValues', values);
+}
+
+/* ── render one field ── */
+function fieldHtml(f) {
+  var val = values[f.id];
+  var wc  = widthClass(f.width);
+  var inner = '';
+
+  if (f.type === 'text') {
+    inner = '<input class="f-input" type="text" data-id="'+h(f.id)+'" placeholder="Add value…" value="'+h(val||'')+'">';
+
+  } else if (f.type === 'number') {
+    inner = '<input class="f-input" type="number" data-id="'+h(f.id)+'" placeholder="0" value="'+h(val!=null?val:'')+'">';
+
+  } else if (f.type === 'checkbox') {
+    inner = '<label class="f-check-row">'
+      +'<input type="checkbox" data-id="'+h(f.id)+'" '+(val?'checked':'')+' data-kind="single">'
+      +'<span>'+(f.checkLabel ? h(f.checkLabel) : '')+'</span>'
+      +'</label>';
+
+  } else if (f.type === 'checkboxes') {
+    var checked = Array.isArray(val) ? val : [];
+    inner = '<div class="f-checks">';
+    (f.options || []).forEach(function(opt) {
+      var isOn = checked.indexOf(opt) !== -1;
+      inner += '<label class="f-check-row">'
+        +'<input type="checkbox" data-id="'+h(f.id)+'" data-opt="'+h(opt)+'" data-kind="multi" '+(isOn?'checked':'')+'>'
+        +'<span>'+h(opt)+'</span>'
+        +'</label>';
+    });
+    inner += '</div>';
+
+  } else if (f.type === 'dropdown') {
+    inner = '<div class="f-btn-group">';
+    (f.options || []).forEach(function(opt) {
+      var on = val === opt ? ' on' : '';
+      inner += '<button class="f-btn'+on+'" data-id="'+h(f.id)+'" data-val="'+h(opt)+'">'+h(opt)+'</button>';
+    });
+    inner += '</div>';
+  }
+
+  return '<div class="field-wrap '+wc+'"><div class="field-label">'+h(f.label)+'</div>'+inner+'</div>';
+}
+
+/* ── render tabs + active group ── */
+function render(tabIndex) {
+  if (tabIndex !== undefined) activeTab = tabIndex;
+  var app = document.getElementById('app');
+  if (!matchedGroups.length) { app.innerHTML = ''; resize(); return; }
+
+  var group = matchedGroups[activeTab];
+  var html = '';
+
+  // Tabs
+  html += '<div class="tabs">';
+  matchedGroups.forEach(function(g, i) {
+    html += '<div class="tab'+(i===activeTab?' active':'')+'" data-tab="'+i+'">'+h(g.name)+'</div>';
+  });
+  html += '</div>';
+
+  // Fields
+  if (!group.fields || !group.fields.length) {
+    html += '<div class="no-fields">No fields configured for this group.</div>';
+  } else {
+    html += '<div class="fields-grid">';
+    group.fields.forEach(function(f) { html += fieldHtml(f); });
+    html += '</div>';
+  }
+
+  app.innerHTML = html;
+  bind();
+  resize();
+}
+
+/* ── bind events ── */
+function bind() {
+  var app = document.getElementById('app');
+
+  // Tab clicks
+  app.querySelectorAll('.tab').forEach(function(el) {
+    el.addEventListener('click', function() { render(parseInt(this.dataset.tab)); });
+  });
+
+  // Text / Number
+  app.querySelectorAll('.f-input').forEach(function(el) {
+    el.addEventListener('change', function() {
+      var v = this.type === 'number' ? (this.value !== '' ? parseFloat(this.value) : null) : this.value;
+      save(this.dataset.id, v);
+    });
+  });
+
+  // Single checkbox
+  app.querySelectorAll('input[data-kind="single"]').forEach(function(el) {
+    el.addEventListener('change', function() { save(this.dataset.id, this.checked); });
+  });
+
+  // Multi checkboxes
+  app.querySelectorAll('input[data-kind="multi"]').forEach(function(el) {
+    el.addEventListener('change', function() {
+      var id  = this.dataset.id;
+      var opt = this.dataset.opt;
+      var cur = Array.isArray(values[id]) ? values[id].slice() : [];
+      if (this.checked) { if (cur.indexOf(opt) === -1) cur.push(opt); }
+      else { cur = cur.filter(function(v){ return v !== opt; }); }
+      save(id, cur);
+    });
+  });
+
+  // Dropdown buttons
+  app.querySelectorAll('.f-btn').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var id  = this.dataset.id;
+      var val = this.dataset.val;
+      var isOn = this.classList.contains('on');
+      // deselect all buttons in group
+      app.querySelectorAll('.f-btn[data-id="'+id+'"]').forEach(function(b){ b.classList.remove('on'); });
+      if (isOn) { save(id, null); }
+      else      { this.classList.add('on'); save(id, val); }
+    });
+  });
+}
+
+/* ── resize iframe ── */
+function resize() {
+  setTimeout(function(){ t.sizeTo('#app').catch(function(){}); }, 30);
+}
+
+/* ── init ── */
+Promise.all([
+  t.get('board', 'shared', 'fieldGroups', []),
+  t.card('labels'),
+  t.get('card', 'shared', 'fieldValues', {})
+]).then(function(res) {
+  var groups  = res[0] || [];
+  var card    = res[1];
+  values      = res[2] || {};
+
+  var cardIds = card.labels.map(function(l){ return l.id; });
+
+  // Filter groups whose labelIds intersect card labels, deduplicate by group id
+  var seen = {};
+  matchedGroups = groups.filter(function(g) {
+    if (seen[g.id]) return false;
+    var match = (g.labelIds||[]).some(function(id){ return cardIds.indexOf(id) !== -1; });
+    if (match) { seen[g.id] = true; }
+    return match;
+  });
+
+  render(0);
+});
+</script>
+</body>
+</html>
