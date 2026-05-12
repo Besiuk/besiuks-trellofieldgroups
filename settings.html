@@ -376,7 +376,12 @@ function renderFieldRow(gid, f) {
   // Width
   html += '<select class="field-select" data-action="field-width" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'">'
     +opt('full','Full',f.width)
+    +opt('4/5','4/5',f.width)
+    +opt('3/4','3/4',f.width)
+    +opt('3/5','3/5',f.width)
     +opt('1/2','1/2',f.width)
+    +opt('2/5','2/5',f.width)
+    +opt('2/3','2/3',f.width)
     +opt('1/3','1/3',f.width)
     +opt('1/4','1/4',f.width)
     +opt('1/5','1/5',f.width)
