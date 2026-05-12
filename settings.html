@@ -44,6 +44,16 @@
   .btn-icon:hover { background: #2f3f4f; color: #b6c2cf; }
   .btn-sm { padding: 3px 8px; font-size: 11px; }
 
+  /* ── Drag & Drop ── */
+  .drag-handle {
+    font-size: 16px; color: #3d5166; cursor: grab; flex-shrink: 0;
+    padding: 0 4px; user-select: none; line-height: 1;
+  }
+  .drag-handle:hover { color: #7a8ea0; }
+  .drag-handle:active { cursor: grabbing; }
+  .group-card.dragging { opacity: 0.4; }
+  .group-card.drag-over { border-color: #4c9ce0; box-shadow: 0 -2px 0 #4c9ce0; }
+
   /* ── Group card ── */
   .group-card {
     background: #22303c;
@@ -210,6 +220,7 @@ var groups           = [];
 var boardLabels      = [];
 var expanded         = null;
 var colorPickerOpen  = null; // 'gid|fid|oi'
+var draggedGid       = null;
 var saveTimer        = null;
 
 /* ── color palette ── */
@@ -279,10 +290,11 @@ function render() {
     if (lblCount) meta.push(lblCount + ' label' + (lblCount !== 1 ? 's' : ''));
     if (fldCount) meta.push(fldCount + ' field' + (fldCount !== 1 ? 's' : ''));
 
-    html += '<div class="group-card" data-gid="'+h(g.id)+'">';
+    html += '<div class="group-card" data-gid="'+h(g.id)+'" draggable="true">';
 
     // Header
     html += '<div class="group-header">';
+    html += '<span class="drag-handle" title="Drag to reorder">⠿</span>';
     html += '<span class="chevron'+(isOpen?' open':'')+'">▶</span>';
     html += '<input class="group-name-input" type="text" data-gid="'+h(g.id)+'" placeholder="Group name…" value="'+h(g.name)+'">';
     if (meta.length) html += '<span class="group-meta">'+meta.join(' · ')+'</span>';
@@ -534,6 +546,7 @@ function bind() {
   app.querySelectorAll('.group-header').forEach(function(hdr) {
     hdr.addEventListener('click', function(e) {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+      if (e.target.classList.contains('drag-handle')) return;
       var gid = this.closest('.group-card').dataset.gid;
       expanded = expanded === gid ? null : gid;
       render();
@@ -599,6 +612,39 @@ function bind() {
         f.options[oi] = newText;
         save();
       }
+    });
+  });
+
+  // ── Drag & Drop group reordering ──
+  app.querySelectorAll('.group-card').forEach(function(card) {
+    card.addEventListener('dragstart', function(e) {
+      draggedGid = this.dataset.gid;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', function() {
+      this.classList.remove('dragging');
+      app.querySelectorAll('.group-card').forEach(function(c){ c.classList.remove('drag-over'); });
+      draggedGid = null;
+    });
+    card.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      if (this.dataset.gid === draggedGid) return;
+      app.querySelectorAll('.group-card').forEach(function(c){ c.classList.remove('drag-over'); });
+      this.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', function(){ this.classList.remove('drag-over'); });
+    card.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      var targetGid = this.dataset.gid;
+      if (!draggedGid || draggedGid === targetGid) return;
+      var fromIdx = groups.findIndex(function(g){ return g.id === draggedGid; });
+      var toIdx   = groups.findIndex(function(g){ return g.id === targetGid; });
+      if (fromIdx === -1 || toIdx === -1) return;
+      var moved = groups.splice(fromIdx, 1)[0];
+      groups.splice(toIdx, 0, moved);
+      save(); render();
     });
   });
 
