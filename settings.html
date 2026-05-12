@@ -642,13 +642,11 @@ function bind() {
   // ── Drag & Drop field reordering ──
   app.querySelectorAll('.field-row').forEach(function(row) {
     row.addEventListener('dragstart', function(e) {
-      // only drag from handle
-      if (!e.target.classList.contains('field-drag-handle')) { e.preventDefault(); return; }
       draggedFid     = this.dataset.fid;
       draggedFid_gid = this.dataset.gid;
       this.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.stopPropagation(); // don't trigger group drag
+      e.stopPropagation();
     });
     row.addEventListener('dragend', function() {
       this.classList.remove('dragging');
