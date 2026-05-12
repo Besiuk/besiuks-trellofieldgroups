@@ -18,6 +18,58 @@ TrelloPowerUp.initialize({
     };
   },
 
+  'card-badges': function(t) {
+    return Promise.all([
+      t.get('board', 'shared', 'fieldGroups', []),
+      t.card('labels'),
+      t.get('card', 'shared', 'fieldValues', {})
+    ]).then(function(res) {
+      var groups = res[0] || [];
+      var card   = res[1];
+      var values = res[2] || {};
+
+      var cardLabelIds = card.labels.map(function(l) { return l.id; });
+
+      // track which group ids already matched (dedup)
+      var seen   = {};
+      var badges = [];
+
+      groups.forEach(function(g) {
+        if (seen[g.id]) return;
+        var matches = (g.labelIds || []).some(function(id) {
+          return cardLabelIds.indexOf(id) !== -1;
+        });
+        if (!matches) return;
+        seen[g.id] = true;
+
+        (g.fields || []).forEach(function(f) {
+          if (!f.showOnCard) return;
+          if (f.type === 'heading' || f.type === 'divider') return;
+
+          var val = values[f.id];
+
+          // build display text
+          var text = '';
+          if (f.type === 'checkbox') {
+            if (!val) return; // hide when unchecked
+            text = '✓ ' + f.label;
+          } else if (f.type === 'checkboxes') {
+            if (!Array.isArray(val) || !val.length) return;
+            text = f.label + ': ' + val.join(', ');
+          } else {
+            if (val == null || val === '') return;
+            text = f.label + ': ' + val;
+          }
+
+          if (!text) return;
+          badges.push({ text: text, color: 'none' });
+        });
+      });
+
+      return badges;
+    });
+  },
+
   'board-buttons': function(t) {
     return [{
       text: 'Field Groups',

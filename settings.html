@@ -57,6 +57,14 @@
   }
   .field-drag-handle:hover { color: #7a8ea0; }
   .field-drag-handle:active { cursor: grabbing; }
+  .eye-toggle {
+    background: transparent; border: none; cursor: pointer;
+    font-size: 14px; padding: 0 3px; flex-shrink: 0; line-height: 1;
+    transition: opacity 0.15s;
+  }
+  .eye-toggle.off { opacity: 0.25; }
+  .eye-toggle.off:hover { opacity: 0.5; }
+  .eye-toggle.on  { opacity: 1; color: #4c9ce0; }
   .group-card.dragging  { opacity: 0.4; }
   .group-card.drag-over { border-color: #4c9ce0; box-shadow: 0 -2px 0 #4c9ce0; }
   .field-row.dragging   { opacity: 0.4; }
@@ -414,8 +422,13 @@ function renderFieldRow(gid, f) {
     +opt('1/5','1/5',f.width)
     +'</select>';
 
-  // Delete
+  // Delete + eye toggle
   html += '<button class="btn-icon" data-action="delete-field" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" title="Remove">✕</button>';
+  if (f.type !== 'heading' && f.type !== 'divider') {
+    var eyeOn = f.showOnCard ? ' on' : ' off';
+    html += '<button class="eye-toggle'+eyeOn+'" data-action="toggle-show-on-card" '
+      +'data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" title="Show on card preview">👁</button>';
+  }
 
   html += '</div>'; // field-row-top
 
@@ -530,6 +543,12 @@ function bind() {
       var g = findGroup(gid);
       if (!g) return;
       g.fields = g.fields.filter(function(f){ return f.id !== fid; });
+      save(); render();
+
+    } else if (action === 'toggle-show-on-card') {
+      var f = findField(gid, fid);
+      if (!f) return;
+      f.showOnCard = !f.showOnCard;
       save(); render();
 
     } else if (action === 'add-option') {
