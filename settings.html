@@ -169,6 +169,24 @@
   }
   .option-input:focus { outline: none; border-color: #4c9ce0; }
 
+  /* ── Color swatch + picker ── */
+  .color-swatch {
+    width: 18px; height: 18px; border-radius: 50%; cursor: pointer; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.15); transition: border-color 0.15s;
+  }
+  .color-swatch:hover { border-color: rgba(255,255,255,0.5); }
+  .color-picker {
+    display: flex; flex-wrap: wrap; gap: 5px; padding: 8px;
+    background: #1a2730; border: 1px solid #2f3f4f; border-radius: 6px;
+    margin: 2px 0 4px 23px; width: fit-content;
+  }
+  .color-dot {
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.1s, transform 0.1s;
+  }
+  .color-dot:hover { border-color: rgba(255,255,255,0.7); transform: scale(1.15); }
+  .color-dot.active { border-color: white; }
+
   /* ── Empty states ── */
   .empty { color: #3d5166; font-size: 12px; padding: 8px 0; text-align: center; }
 
@@ -188,10 +206,19 @@
 var t = TrelloPowerUp.iframe();
 
 /* ── state ── */
-var groups      = [];
-var boardLabels = [];
-var expanded    = null; // group id currently open
-var saveTimer   = null;
+var groups           = [];
+var boardLabels      = [];
+var expanded         = null;
+var colorPickerOpen  = null; // 'gid|fid|oi'
+var saveTimer        = null;
+
+/* ── color palette ── */
+var PALETTE = [
+  '#ef5350','#e91e63','#9c27b0','#673ab7',
+  '#3f51b5','#4c9ce0','#00bcd4','#009688',
+  '#4caf50','#8bc34a','#f9a825','#fb8c00',
+  '#ff5722','#795548','#546e7a','#b6c2cf'
+];
 
 /* ── Trello label color map → CSS background ── */
 var COLOR_MAP = {
@@ -326,7 +353,8 @@ function renderGroupBody(g) {
 }
 
 function renderFieldRow(gid, f) {
-  var hasOptions = f.type === 'dropdown' || f.type === 'checkboxes';
+  var hasOptions = f.type === 'dropdown' || f.type === 'checkboxes' || f.type === 'select';
+  var showColor  = f.type === 'dropdown' || f.type === 'select';
   var html = '<div class="field-row" data-fid="'+h(f.id)+'">';
   html += '<div class="field-row-top">';
 
@@ -369,18 +397,37 @@ function renderFieldRow(gid, f) {
     html += '</div>';
   }
 
-  // Options for dropdown / checkboxes
+  // Options for dropdown / checkboxes / select
   if (hasOptions) {
     html += '<div class="options-section">';
     html += '<div style="font-size:10px;color:#7a8ea0;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px">Options</div>';
     html += '<div class="options-list">';
+    var colors = f.optionColors || {};
     (f.options || []).forEach(function(op, oi) {
-      html += '<div class="option-row">'
-        +'<input class="option-input" type="text" placeholder="Option…" '
+      var pickerKey    = gid+'|'+f.id+'|'+oi;
+      var isPickerOpen = colorPickerOpen === pickerKey;
+      var currentColor = colors[op] || '#4c9ce0';
+      html += '<div>';
+      html += '<div class="option-row">';
+      if (showColor) {
+        html += '<div class="color-swatch" style="background:'+currentColor+'" '
+          +'data-action="toggle-color-picker" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" data-oi="'+oi+'"></div>';
+      }
+      html += '<input class="option-input" type="text" placeholder="Option…" '
           +'data-action="option-text" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" data-oi="'+oi+'" '
           +'value="'+h(op)+'">'
-        +'<button class="btn-icon" data-action="delete-option" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" data-oi="'+oi+'">✕</button>'
-        +'</div>';
+        +'<button class="btn-icon" data-action="delete-option" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" data-oi="'+oi+'">✕</button>';
+      html += '</div>';
+      if (showColor && isPickerOpen) {
+        html += '<div class="color-picker">';
+        PALETTE.forEach(function(c) {
+          var active = c === currentColor ? ' active' : '';
+          html += '<div class="color-dot'+active+'" style="background:'+c+'" '
+            +'data-action="pick-color" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'" data-oi="'+oi+'" data-color="'+c+'"></div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
     });
     html += '</div>'; // options-list
     html += '<button class="btn btn-ghost btn-sm" data-action="add-option" data-gid="'+h(gid)+'" data-fid="'+h(f.id)+'">+ Add Option</button>';
@@ -456,7 +503,24 @@ function bind() {
       var f = findField(gid, fid);
       if (!f) return;
       var oi = parseInt(el.dataset.oi);
+      var optText = f.options[oi];
       f.options.splice(oi, 1);
+      if (f.optionColors && f.optionColors[optText]) delete f.optionColors[optText];
+      save(); render();
+
+    } else if (action === 'toggle-color-picker') {
+      var key = gid+'|'+fid+'|'+el.dataset.oi;
+      colorPickerOpen = colorPickerOpen === key ? null : key;
+      render();
+
+    } else if (action === 'pick-color') {
+      var f = findField(gid, fid);
+      if (!f) return;
+      var oi    = parseInt(el.dataset.oi);
+      var color = el.dataset.color;
+      if (!f.optionColors) f.optionColors = {};
+      f.optionColors[f.options[oi]] = color;
+      colorPickerOpen = null;
       save(); render();
     }
   });
@@ -494,7 +558,7 @@ function bind() {
       var f = findField(this.dataset.gid, this.dataset.fid);
       if (!f) return;
       f.type = this.value;
-      if ((f.type === 'dropdown' || f.type === 'checkboxes') && !f.options) f.options = [];
+      if ((f.type === 'dropdown' || f.type === 'checkboxes' || f.type === 'select') && !f.options) f.options = [];
       save(); render();
     });
   });
@@ -518,9 +582,18 @@ function bind() {
   // Option text
   app.querySelectorAll('[data-action="option-text"]').forEach(function(el) {
     el.addEventListener('input', function() {
-      var f  = findField(this.dataset.gid, this.dataset.fid);
-      var oi = parseInt(this.dataset.oi);
-      if (f && f.options) { f.options[oi] = this.value; save(); }
+      var f      = findField(this.dataset.gid, this.dataset.fid);
+      var oi     = parseInt(this.dataset.oi);
+      if (f && f.options) {
+        var oldText = f.options[oi];
+        var newText = this.value;
+        if (f.optionColors && f.optionColors[oldText] !== undefined) {
+          f.optionColors[newText] = f.optionColors[oldText];
+          delete f.optionColors[oldText];
+        }
+        f.options[oi] = newText;
+        save();
+      }
     });
   });
 

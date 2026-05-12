@@ -97,7 +97,7 @@
   .f-checks { display: flex; flex-direction: column; gap: 4px; }
 
   /* ── Dropdown (button group) ── */
-  .f-btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+  .f-btn-group { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
   .f-btn {
     padding: 5px 11px;
     background: #22303c;
@@ -193,16 +193,19 @@ function fieldHtml(f) {
     inner += '</div>';
 
   } else if (f.type === 'dropdown') {
+    var colors = f.optionColors || {};
     inner = '<div class="f-btn-group">';
     (f.options || []).forEach(function(opt) {
-      var on = val === opt ? ' on' : '';
-      inner += '<button class="f-btn'+on+'" data-id="'+h(f.id)+'" data-val="'+h(opt)+'">'+h(opt)+'</button>';
+      var on    = val === opt;
+      var color = colors[opt] || '#4c9ce0';
+      var style = on ? ' style="background:'+color+';border-color:'+color+'"' : '';
+      inner += '<button class="f-btn'+(on?' on':'')+'"'+style+' data-id="'+h(f.id)+'" data-val="'+h(opt)+'">'+h(opt)+'</button>';
     });
     inner += '</div>';
 
   } else if (f.type === 'select') {
     inner = '<select class="f-select" data-id="'+h(f.id)+'">';
-    inner += '<option value="">— wählen —</option>';
+    inner += '<option value="">— select —</option>';
     (f.options || []).forEach(function(opt) {
       var sel = val === opt ? ' selected' : '';
       inner += '<option value="'+h(opt)+'"'+sel+'>'+h(opt)+'</option>';
